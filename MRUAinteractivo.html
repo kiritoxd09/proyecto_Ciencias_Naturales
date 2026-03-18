@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Simulador MRU / MRUA</title>
+
+<style>
+
+body{
+    font-family: Arial, Helvetica, sans-serif;
+    background: linear-gradient(135deg,#1e3c72,#2a5298);
+    color:white;
+    text-align:center;
+    margin:0;
+    padding:0;
+}
+
+h1{
+    margin-top:20px;
+}
+
+.panel{
+    background:white;
+    color:black;
+    width:80%;
+    margin:auto;
+    padding:20px;
+    border-radius:15px;
+    box-shadow:0px 10px 20px rgba(0,0,0,0.3);
+}
+
+input{
+    width:70px;
+    padding:5px;
+    margin:5px;
+}
+
+button{
+    padding:10px 20px;
+    margin:10px;
+    border:none;
+    border-radius:8px;
+    font-size:16px;
+    cursor:pointer;
+}
+
+#start{
+    background:#28a745;
+    color:white;
+}
+
+#reset{
+    background:#dc3545;
+    color:white;
+}
+
+#escenario{
+    width:90%;
+    height:120px;
+    margin:30px auto;
+    border-radius:10px;
+    border:3px solid white;
+    position:relative;
+    background:linear-gradient(to right,#e0e0e0,#f5f5f5);
+    overflow:hidden;
+}
+
+#objeto{
+    width:35px;
+    height:35px;
+    background:orange;
+    border-radius:50%;
+    position:absolute;
+    bottom:10px;
+    left:0;
+    box-shadow:0px 0px 10px rgba(0,0,0,0.5);
+}
+
+.resultados{
+    font-size:18px;
+    margin-top:15px;
+}
+
+.tipo{
+    font-weight:bold;
+    font-size:20px;
+    margin-top:10px;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>🚀 Simulador de Movimiento (MRU / MRUA)</h1>
+
+<div class="panel">
+
+Posición inicial x₀ (m)
+<input type="number" id="x0" value="0">
+
+Velocidad inicial v₀ (m/s)
+<input type="number" id="v0" value="10">
+
+Aceleración a (m/s²)
+<input type="number" id="a" value="0">
+
+<br>
+
+<button id="start" onclick="iniciar()">▶ Iniciar</button>
+<button id="reset" onclick="reiniciar()">🔄 Reiniciar</button>
+
+<div class="tipo" id="tipoMovimiento"></div>
+
+</div>
+
+<div id="escenario">
+<div id="objeto"></div>
+</div>
+
+<div class="resultados">
+⏱ Tiempo: <span id="tiempo">0</span> s  
+📏 Posición: <span id="posicion">0</span> m  
+</div>
+
+<script>
+
+let intervalo;
+
+function iniciar(){
+
+let x0 = parseFloat(document.getElementById("x0").value);
+let v0 = parseFloat(document.getElementById("v0").value);
+let a = parseFloat(document.getElementById("a").value);
+
+let objeto = document.getElementById("objeto");
+let tiempo = document.getElementById("tiempo");
+let posicion = document.getElementById("posicion");
+let tipo = document.getElementById("tipoMovimiento");
+
+if(a == 0){
+tipo.innerHTML = "Movimiento Rectilíneo Uniforme (MRU)";
+}else{
+tipo.innerHTML = "Movimiento Rectilíneo Uniformemente Acelerado (MRUA)";
+}
+
+let t = 0;
+let dt = 0.1;
+
+clearInterval(intervalo);
+
+intervalo = setInterval(()=>{
+
+let x = x0 + v0*t + 0.5*a*t*t;
+
+objeto.style.left = (x*6)+"px";
+
+tiempo.innerHTML = t.toFixed(1);
+posicion.innerHTML = x.toFixed(2);
+
+t += dt;
+
+if(x*6 > window.innerWidth){
+clearInterval(intervalo);
+}
+
+},40)
+
+}
+
+function reiniciar(){
+
+clearInterval(intervalo);
+
+document.getElementById("objeto").style.left="0px";
+document.getElementById("tiempo").innerHTML="0";
+document.getElementById("posicion").innerHTML="0";
+document.getElementById("tipoMovimiento").innerHTML="";
+
+}
+
+</script>
+
+</body>
+</html>
