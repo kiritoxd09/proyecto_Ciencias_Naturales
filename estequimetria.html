@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora Estequiométrica PRO</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Segoe UI', sans-serif;
+}
+
+body{
+    background: linear-gradient(135deg,#0f172a,#1e293b);
+    display:flex;
+    justify-content:center;
+    padding:40px;
+    color:white;
+}
+
+.container{
+    width:100%;
+    max-width:1000px;
+    background:#1e293b;
+    border-radius:20px;
+    padding:30px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.7);
+}
+
+.title{
+    text-align:center;
+    font-size:24px;
+    margin-bottom:20px;
+    color:#38bdf8;
+}
+
+.row{
+    display:flex;
+    gap:10px;
+    margin-bottom:15px;
+    align-items:center;
+}
+
+.label{
+    width:180px;
+    color:#22c55e;
+}
+
+input,select{
+    flex:1;
+    padding:10px;
+    border-radius:10px;
+    border:none;
+    background:#f1f5f9;
+}
+
+button{
+    padding:10px 15px;
+    border:none;
+    border-radius:10px;
+    background:#22c55e;
+    color:white;
+    cursor:pointer;
+}
+
+.result{
+    margin-top:20px;
+    background:#020617;
+    padding:15px;
+    border-left:4px solid #38bdf8;
+    max-height:300px;
+    overflow-y:auto;
+}
+
+.item{
+    margin-top:10px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="title">Calculadora Estequiométrica</div>
+
+<div class="row">
+    <div class="label">Ecuación</div>
+    <input id="input">
+    <button onclick="balancear()">Balancear</button>
+</div>
+
+<div class="row">
+    <div class="label">Resultado</div>
+    <input id="ecuacion" readonly>
+</div>
+
+<div class="row">
+    <div class="label">Compuesto</div>
+    <input id="compuesto">
+</div>
+
+<div class="row">
+    <div class="label">Cantidad</div>
+    <input type="number" id="valor">
+    <select id="tipo">
+        <option value="g-mol">g → mol</option>
+        <option value="mol-g">mol → g</option>
+    </select>
+    <button onclick="convertir()">Convertir</button>
+</div>
+
+<div id="resultado" class="result">Historial:</div>
+
+</div>
+
+<script>
+
+// MASAS
+const masas = {H:1,C:12,O:16,Na:23,Cl:35.5};
+
+// PARSEAR
+function parsear(f){
+    let r=/([A-Z][a-z]*)(\d*)/g, obj={}, m;
+    while(m=r.exec(f)){
+        obj[m[1]]=(obj[m[1]]||0)+parseInt(m[2]||1);
+    }
+    return obj;
+}
+
+// OBTENER ELEMENTOS
+function elementos(ecuacion){
+    let partes=ecuacion.replace("->","+").split("+");
+    let set=new Set();
+    partes.forEach(p=>{
+        let obj=parsear(p.trim());
+        Object.keys(obj).forEach(e=>set.add(e));
+    });
+    return Array.from(set);
+}
+
+// MATRIZ
+function matriz(izq,der,elems){
+    return elems.map(e=>{
+        return [
+            ...izq.map(r=>parsear(r)[e]||0),
+            ...der.map(p=>-(parsear(p)[e]||0))
+        ];
+    });
+}
+
+// RESOLVER (fuerza bruta)
+function resolver(mat){
+    let n=mat[0].length;
+
+    function probar(vals){
+        return mat.every(fila=>{
+            return fila.reduce((s,v,i)=>s+v*vals[i],0)===0;
+        });
+    }
+
+    function backtrack(vals){
+        if(vals.length===n){
+            if(probar(vals)) return vals;
+            return null;
+        }
+
+        for(let i=1;i<=10;i++){
+            let r=backtrack([...vals,i]);
+            if(r) return r;
+        }
+        return null;
+    }
+
+    return backtrack([]);
+}
+
+// BALANCEAR
+function balancear(){
+
+    let eq=document.getElementById("input").value;
+
+    if(!eq.includes("->")){
+        mostrar("❌ Usa ->");
+        return;
+    }
+
+    let [l,r]=eq.split("->");
+    let izq=l.split("+").map(x=>x.trim());
+    let der=r.split("+").map(x=>x.trim());
+
+    let elems=elementos(eq);
+    let mat=matriz(izq,der,elems);
+    let sol=resolver(mat);
+
+    if(!sol){
+        mostrar("❌ No se pudo balancear");
+        return;
+    }
+
+    let res=izq.map((c,i)=>sol[i]+c).join(" + ")
+        +" → "+
+        der.map((c,i)=>sol[i+izq.length]+c).join(" + ");
+
+    document.getElementById("ecuacion").value=res;
+
+    mostrar("🧪 Balanceado: "+res);
+}
+
+// MASA MOLAR
+function masaMolar(f){
+    let c=parsear(f),t=0;
+    for(let e in c){
+        if(!masas[e]) return null;
+        t+=masas[e]*c[e];
+    }
+    return t;
+}
+
+// MOSTRAR
+function mostrar(t){
+    document.getElementById("resultado").innerHTML+=`<div class="item">${t}</div>`;
+}
+
+// CONVERTIR
+function convertir(){
+
+    let c=document.getElementById("compuesto").value;
+    let v=parseFloat(document.getElementById("valor").value);
+    let tipo=document.getElementById("tipo").value;
+
+    let m=masaMolar(c);
+
+    if(!m||isNaN(v)) return mostrar("❌ Error");
+
+    if(tipo==="g-mol"){
+        let mol=v/m;
+        mostrar(`Masa molar = ${m} g/mol<br>${v}/${m} = ${mol.toFixed(3)} mol`);
+    }else{
+        let g=v*m;
+        mostrar(`${v}×${m} = ${g.toFixed(2)} g`);
+    }
+}
+
+</script>
+
+</body>
+</html>
